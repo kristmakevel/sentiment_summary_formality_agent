@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NLP Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-[#0a1408] via-[#1b3921] to-[#4f6b33] min-h-screen flex items-center justify-center p-4">
+
+  <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl">
+    <h1 class="text-3xl font-bold text-center text-[#1b3921] mb-6">🌿 NLP Assistant</h1>
+
+    <textarea id="inputText" rows="5" placeholder="Enter your text here..."
+      class="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#a5c15d] focus:border-transparent mb-6 transition"></textarea>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      <button onclick="processText('summary')"
+        class="flex items-center justify-center gap-2 bg-[#4f6b33] text-white py-3 rounded-xl font-semibold hover:bg-[#1b3921] hover:shadow-lg transition-all">
+        Summarize
+      </button>
+
+      <button onclick="processText('formal')"
+        class="flex items-center justify-center gap-2 bg-[#4f6b33] text-white py-3 rounded-xl font-semibold hover:bg-[#1b3921] hover:shadow-lg transition-all">
+        Formal rewrite
+      </button>
+
+      <button onclick="processText('informal')"
+        class="flex items-center justify-center gap-2 bg-[#4f6b33] text-white py-3 rounded-xl font-semibold hover:bg-[#1b3921] hover:shadow-lg transition-all">
+        Informal rewrite
+      </button>
+
+      <button onclick="processText('tone')"
+        class="flex items-center justify-center gap-2 bg-[#4f6b33] text-white py-3 rounded-xl font-semibold hover:bg-[#1b3921] hover:shadow-lg transition-all">
+        Analyze sentiment
+      </button>
+    </div>
+
+    <div class="mt-4">
+      <h2 class="text-xl font-semibold text-[#1b3921] mb-2">Result:</h2>
+      <div id="output" class="bg-[#ecf5b7] text-[#0a1408] p-4 rounded-xl min-h-[80px] whitespace-pre-wrap shadow-inner"></div>
+    </div>
+  </div>
+
+<script>
+async function processText(instructionData) {
+  const inputText = document.getElementById('inputText').value;
+  const output = document.getElementById('output');
+
+  if (!inputText.trim()) {
+      output.innerText = "Please enter some text first!";
+      return;
+  }
+
+  output.innerText = "Loading...";
+
+  try {
+    const response = await fetch('http://127.0.0.1:8080/process', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        text: inputText,
+        instruction: instructionData // Отправляем команду от кнопки
+      })
+    });
+
+    const data = await response.json();
+    const result = data.result;
+    let formatted = "";
+
+    if (result.summary) {
+      formatted += "Summary:\n" + result.summary + "\n\n";
+    }
+
+    if (result.text) {
+      formatted += "Rewritten:\n" + result.text + "\n\n";
+    }
+
+    if (result.sentiment) {
+      const label = result.sentiment.label;
+      const confidence = result.sentiment.confidence;
+      let certaintyText = "";
+
+      if (confidence < 0.5) {
+        certaintyText = "im really not sure but maybe";
+      } else if (confidence >= 0.5 && confidence <= 0.7) {
+        certaintyText = "probably";
+      } else {
+        certaintyText = "definitely";
+      }
+
+      formatted += `Tone: ${certaintyText} ${label}\n\n`;
+    }
+
+    if (!formatted) {
+      formatted = "No result";
+    }
+
+    output.innerText = formatted.trim();
+
+  } catch (error) {
+    output.innerText = "Error: " + error;
+  }
+}
+</script>
+
+</body>
+</html>
