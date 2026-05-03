@@ -7,8 +7,8 @@ __Цель проекта__
 - переписывает текст в заданном стиле
 
 
-
 __Архитектура проекта__
+```text
 backend/
 │
 ├── artifacts/                   # сохраненные артефакты модели
@@ -20,7 +20,7 @@ backend/
 │   └── sentiment_dataset.csv    # датасет для обучения
 │
 ├── models/
-│   ├── _ _init_ _.py              
+│   ├── __init__.py              
 │   ├── classifier.py            # обучение модели тональности
 │   ├── glove.6B.200d.txt        # предобученные эмбеддинги GloVe
 │   ├── inference.py             # инференс модели
@@ -30,7 +30,7 @@ backend/
 │   └── index.html               # пользовательский интерфейс
 │
 ├── tools/
-│   ├── _ _init_ _.py              
+│   ├── __init__.py              
 │   ├── rewrite.py               # переписывание текста (LLM)
 │   ├── sentiment.py             # интерфейс классификации
 │   └── summarization.py         # суммаризация (BART)
@@ -38,9 +38,10 @@ backend/
 ├── utils/
 │   └── logger.py                # логирование
 │
-├── _ _init_ _.py                  
+├── __init__.py                  
 ├── agent.py                     # логика агента
 └── app.py                       # FastAPI сервер
+```
 
 
 __Используемые технологии__
@@ -89,10 +90,9 @@ pip install -r requirements.txt
 python backend/models/classifier.py
 
 После выполнения будут созданы артефакты:
-backend/artifacts/
-├── word2idx.pkl
-├── embedding_matrix.npy
-└── sentiment_model.pth
+word2idx.pkl
+embedding_matrix.npy
+sentiment_model.pth
 
 4. Запуск сервера
 uvicorn backend.app:app --reload --port 8080
