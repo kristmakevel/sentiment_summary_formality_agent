@@ -11,70 +11,70 @@
     <h1 class="text-3xl font-bold text-center text-[#1b3921] mb-6">🌿 NLP Assistant</h1>
 
     <textarea id="inputText" rows="5" placeholder="Enter your text here..."
-      class="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#a5c15d] focus:border-transparent mb-6 transition"></textarea>
+      class="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#a5c15d] focus:border-transparent mb-4 transition"></textarea>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-      <button onclick="processText('summary')"
-        class="flex items-center justify-center gap-2 bg-[#4f6b33] text-white py-3 rounded-xl font-semibold hover:bg-[#1b3921] hover:shadow-lg transition-all">
-        Summarize
-      </button>
+    <input id="instructionInput" type="text"
+      placeholder='What should I do? e.g. "summarize and tell me the tone"'
+      class="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#a5c15d] focus:border-transparent mb-4 transition" />
 
-      <button onclick="processText('formal')"
-        class="flex items-center justify-center gap-2 bg-[#4f6b33] text-white py-3 rounded-xl font-semibold hover:bg-[#1b3921] hover:shadow-lg transition-all">
-        Formal rewrite
-      </button>
+    <button onclick="processText()"
+      class="w-full bg-[#4f6b33] text-white py-3 rounded-xl font-semibold hover:bg-[#1b3921] hover:shadow-lg transition-all mb-6">
+      Run
+    </button>
 
-      <button onclick="processText('informal')"
-        class="flex items-center justify-center gap-2 bg-[#4f6b33] text-white py-3 rounded-xl font-semibold hover:bg-[#1b3921] hover:shadow-lg transition-all">
-        Informal rewrite
-      </button>
-
-      <button onclick="processText('tone')"
-        class="flex items-center justify-center gap-2 bg-[#4f6b33] text-white py-3 rounded-xl font-semibold hover:bg-[#1b3921] hover:shadow-lg transition-all">
-        Analyze sentiment
-      </button>
+    <div id="planBox" class="hidden mb-4 bg-gray-50 border border-gray-200 rounded-xl p-4">
+      <p class="text-xs text-gray-400 font-semibold uppercase mb-1">Agent plan</p>
+      <p id="planText" class="text-sm text-gray-600 font-mono"></p>
     </div>
 
-    <div class="mt-4">
+    <div>
       <h2 class="text-xl font-semibold text-[#1b3921] mb-2">Result:</h2>
       <div id="output" class="bg-[#ecf5b7] text-[#0a1408] p-4 rounded-xl min-h-[80px] whitespace-pre-wrap shadow-inner"></div>
     </div>
   </div>
 
 <script>
-async function processText(instructionData) {
+async function processText() {
   const inputText = document.getElementById('inputText').value;
+  const instruction = document.getElementById('instructionInput').value;
   const output = document.getElementById('output');
+  const planBox = document.getElementById('planBox');
+  const planText = document.getElementById('planText');
 
   if (!inputText.trim()) {
-      output.innerText = "Please enter some text first!";
-      return;
+    output.innerText = "Please enter some text first!";
+    return;
+  }
+  if (!instruction.trim()) {
+    output.innerText = "Please enter an instruction!";
+    return;
   }
 
   output.innerText = "Loading...";
+  planBox.classList.add('hidden');
 
   try {
-    const response = await fetch('http://127.0.0.1:8080/process', {
+    const response = await fetch('/process', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        text: inputText,
-        instruction: instructionData // Отправляем команду от кнопки
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: inputText, instruction: instruction })
     });
 
     const data = await response.json();
     const result = data.result;
     let formatted = "";
 
+    if (result.tasks_executed && result.tasks_executed.length > 0) {
+      planText.innerText = result.tasks_executed.join(' → ');
+      planBox.classList.remove('hidden');
+    }
+
     if (result.summary) {
       formatted += "Summary:\n" + result.summary + "\n\n";
     }
 
-    if (result.text) {
-      formatted += "Rewritten:\n" + result.text + "\n\n";
+    if (result.rewritten) {
+      formatted += "Rewritten:\n" + result.rewritten + "\n\n";
     }
 
     if (result.sentiment) {
@@ -83,8 +83,8 @@ async function processText(instructionData) {
       let certaintyText = "";
 
       if (confidence < 0.5) {
-        certaintyText = "im really not sure but maybe";
-      } else if (confidence >= 0.5 && confidence <= 0.7) {
+        certaintyText = "I'm really not sure but maybe";
+      } else if (confidence <= 0.7) {
         certaintyText = "probably";
       } else {
         certaintyText = "definitely";
@@ -93,11 +93,7 @@ async function processText(instructionData) {
       formatted += `Tone: ${certaintyText} ${label}\n\n`;
     }
 
-    if (!formatted) {
-      formatted = "No result";
-    }
-
-    output.innerText = formatted.trim();
+    output.innerText = formatted.trim() || "No result";
 
   } catch (error) {
     output.innerText = "Error: " + error;

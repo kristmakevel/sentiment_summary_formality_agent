@@ -2,7 +2,7 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
 
 model_name = "facebook/bart-large-cnn"
-device = "cuda" if torch.cuda.is_available() else "cpu"  # 👈 Добавили поиск видеокарты
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 _tokenizer = None
 _model = None
@@ -22,19 +22,18 @@ def summarize(text):
     inputs = tokenizer(text, return_tensors="pt", max_length=1024, truncation=True).to(device)
 
     input_length = inputs["input_ids"].shape[1]
-
-    #берем минимальную и максимальную допустимую длину
     dynamic_max = max(15, int(input_length * 0.6))
     dynamic_min = min(10, int(input_length * 0.2))
 
-    summary_ids = model.generate(
-        inputs["input_ids"],
-        max_length=dynamic_max,
-        min_length=dynamic_min,
-        do_sample=False,
-        num_beams=4,
-        length_penalty=2.0,
-        early_stopping=True
-    )
+    with torch.inference_mode():
+        summary_ids = model.generate(
+            inputs["input_ids"],
+            max_new_tokens=dynamic_max,
+            min_length=dynamic_min,
+            do_sample=False,
+            num_beams=2,
+            length_penalty=2.0,
+            early_stopping=True
+        )
 
     return tokenizer.decode(summary_ids[0], skip_special_tokens=True)
